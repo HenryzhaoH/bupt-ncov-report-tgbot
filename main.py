@@ -256,11 +256,7 @@ def main():
     scheduler.start()
     print(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
 
-    
-    REQUEST_KWARGS={
-        'proxy_url': 'socks5h://127.0.0.1:1080/',
-    }
-    updater = Updater(TG_BOT_TOKEN, request_kwargs=REQUEST_KWARGS, use_context=True)
+    updater = Updater(TG_BOT_TOKEN, request_kwargs=TG_BOT_PROXY, use_context=True)
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
