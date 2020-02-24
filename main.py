@@ -51,8 +51,11 @@ def help_entry(update, context):
   恢复所有自动签到
 /remove
   删除所有签到用户
-
 以上功能的单用户操作正在开发中 #SOON
+
+工作原理与位置变更须知：
+从网页上获取上一次成功签到的数据，处理后再次提交。
+因此，如果您改变了城市（如返回北京），请先使用 /pause 暂停自动签到，并 **【连续两天】** 手动签到成功后，再使用 /resume 恢复自动签到。
 '''
     '''
     /resume [id]
@@ -213,8 +216,9 @@ def listall_entry(update, context):
 
 def status_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
-    cron_data = ["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()]
-    update.message.reply_text(cron_data)
+    cron_data = "\n".join(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
+    update.message.reply_text("Cronjob: " + cron_data)
+    update.message.reply_text("System time: " + str(datetime.datetime.now()))
 
 def backup_db():
     logger.info("backup started!")
@@ -256,11 +260,7 @@ def main():
     scheduler.start()
     print(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
 
-    
-    REQUEST_KWARGS={
-        'proxy_url': 'socks5h://127.0.0.1:1080/',
-    }
-    updater = Updater(TG_BOT_TOKEN, request_kwargs=REQUEST_KWARGS, use_context=True)
+    updater = Updater(TG_BOT_TOKEN, request_kwargs=TG_BOT_PROXY, use_context=True)
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
