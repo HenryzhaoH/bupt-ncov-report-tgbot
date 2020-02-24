@@ -45,27 +45,21 @@ def help_entry(update, context):
   *如果您不明白这是什么，请使用上一条命令添加用户*
   例：/add\_by\_cookie `1cmgkrrcssge6edkkg3ucigj1m 44f522350f5e843fbac58b726753eb36`
 
-/pause
-  暂停所有自动签到
-/resume
-  恢复所有自动签到
-/remove
-  删除所有签到用户
+/resume [id] ...
+  （默认启用）
+   恢复一个或全部签到用户的自动签到，未指定 id 则为全部
+/pause [id] ...
+    暂停一个或全部签到用户的自动签到，未指定 id 则为全部
+/remove /all
+/remove [id] ...
+    删除一个或全部签到用户，指定 id，或使用 all 操作全部
+    
 以上功能的单用户操作正在开发中 #SOON
 
 工作原理与位置变更须知：
 从网页上获取上一次成功签到的数据，处理后再次提交。
 因此，如果您改变了城市（如返回北京），请先使用 /pause 暂停自动签到，并 **【连续两天】** 手动签到成功后，再使用 /resume 恢复自动签到。
 '''
-    '''
-    /resume [id]
-    （默认启用）
-    恢复一个或全部签到用户的自动签到，未指定 id 则为全部
-    /pause [id]
-    暂停一个或全部签到用户的自动签到，未指定 id 则为全部
-    /remove [id]/all
-    删除一个或全部签到用户，指定 id，或使用 all 操作全部
-    '''
     update.message.reply_markdown(help_text.strip(), disable_web_page_preview=True)
 
 def list_entry(update, context, admin_all=False):
@@ -144,19 +138,31 @@ def add_by_uid_entry(update, context):
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
 
 def checkin_entry(update, context):
-    if len(context.args) > 0:
-        opid = context.args[0]
-        raise NotImplementedError('单个签到功能当前未实现')
+    specified_checkin_target = len(context.args) > 0 # checkin for multiple accounts
+    checkin_targets = []
+
+    if specified_checkin_target:
+        checkin_targets = list(map(int, context.args))
+        # opid = context.args[0]
+        # raise NotImplementedError('单个签到功能当前未实现')
 
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
-    
+
+    available_targets = tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed)
+    pending_targets = []
+
+    if not specified_checkin_target:
+        pending_targets = available_targets
+    else:
+        pending_targets = [available_targets[i-1] for i in checkin_targets]
+
     if tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed).count() == 0:
         ret_msg = '用户列表为空'
         update.message.reply_markdown(ret_msg)
         return
-    for buptuser in tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed):
+    for buptuser in pending_targets:
         try:
             ret = buptuser.ncov_checkin(force=True)
             ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到成功！\n服务器返回：`{ret}`"
@@ -165,30 +171,70 @@ def checkin_entry(update, context):
         update.message.reply_markdown(ret_msg)
 
 def pause_entry(update, context):
+    specified_pause_target = len(context.args) > 0 # checkin for multiple accounts
+    pause_targets = []
+    if specified_pause_target:
+        pause_targets = list(map(int, context.args))
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
-    for buptuser in tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed):
+
+    available_targets = tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed)
+    pending_targets = []
+
+    if not specified_pause_target:
+        pending_targets = available_targets
+    else:
+        pending_targets = [available_targets[i-1] for i in pause_targets]
+
+    for buptuser in pending_targets:
         buptuser.status = BUPTUserStatus.stopped
         buptuser.save()
         ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已暂停自动签到。"
         update.message.reply_markdown(ret_msg)
 
 def resume_entry(update, context):
+    specified_resume_target = len(context.args) > 0 # checkin for multiple accounts
+    resume_targets = []
+    if specified_resume_target:
+        resume_targets = list(map(int, context.args))
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
-    for buptuser in tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed):
+
+    available_targets = tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed)
+    pending_targets = []
+
+    if not specified_resume_target:
+        pending_targets = available_targets
+    else:
+        pending_targets = [available_targets[i-1] for i in resume_targets]
+
+    for buptuser in pending_targets:
         buptuser.status = BUPTUserStatus.normal
         buptuser.save()
         ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已启用自动签到。"
         update.message.reply_markdown(ret_msg)
 
 def remove_entry(update, context):
+    assert len(context.args) > 0, "错误的命令，请用 /help 查看使用帮助。"
+    specified_remove_target = not context.args[0].lower() == '/all'
+    remove_targets = []
+    if specified_remove_target:
+        remove_targets = list(map(int, context.args))
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
-    for buptuser in tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed):
+
+    available_targets = tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed)
+    pending_targets = []
+
+    if not specified_remove_target:
+        pending_targets = available_targets
+    else:
+        pending_targets = [available_targets[i-1] for i in remove_targets]
+
+    for buptuser in pending_targets:
         buptuser.status = BUPTUserStatus.removed
         buptuser.save()
         ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已删除。"
