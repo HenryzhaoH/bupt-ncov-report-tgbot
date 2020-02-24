@@ -1,0 +1,13 @@
+# App
+my_app.db
+include/config.py
+log/*
+backup/*
+
+# Python
+__pycache__
+*.pyc
+
+# IDE
+
+.vscode
