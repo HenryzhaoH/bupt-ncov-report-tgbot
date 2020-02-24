@@ -2,4 +2,4 @@
 
 ## Notice
 
-Run `python main.py --initdb` for the first.
+Run `python main.py --initdb` first.
