@@ -213,8 +213,9 @@ def listall_entry(update, context):
 
 def status_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
-    cron_data = ["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()]
-    update.message.reply_text(cron_data)
+    cron_data = "\n".join(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
+    update.message.reply_text("Cronjob: " + cron_data)
+    update.message.reply_text("System time: " + str(datetime.datetime.now()))
 
 def backup_db():
     logger.info("backup started!")
