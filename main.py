@@ -9,6 +9,9 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import telegram
 
 def tguser_check(update, context):
+    if BOT_DEBUG == True and update.message.from_user.id != TG_BOT_MASTER:
+        raise Exception("DEBUGGING, Try again later.")
+
     user, _ = TGUser.get_or_create(
         userid = update.message.from_user.id
     )
@@ -45,31 +48,14 @@ def help_entry(update, context):
   *如果您不明白这是什么，请使用上一条命令添加用户*
   例：/add\_by\_cookie `1cmgkrrcssge6edkkg3ucigj1m 44f522350f5e843fbac58b726753eb36`
 
-/pause
-  暂停所有自动签到
-/resume
-  恢复所有自动签到
-/remove
-  删除所有签到用户
-以上功能的单用户操作正在开发中 #SOON
-
 工作原理与位置变更须知：
 从网页上获取上一次成功签到的数据，处理后再次提交。
 因此，如果您改变了城市（如返回北京），请先使用 /pause 暂停自动签到，并 **【连续两天】** 手动签到成功后，再使用 /resume 恢复自动签到。
 '''
-    '''
-    /resume [id]
-    （默认启用）
-    恢复一个或全部签到用户的自动签到，未指定 id 则为全部
-    /pause [id]
-    暂停一个或全部签到用户的自动签到，未指定 id 则为全部
-    /remove [id]/all
-    删除一个或全部签到用户，指定 id，或使用 all 操作全部
-    '''
     update.message.reply_markdown(help_text.strip(), disable_web_page_preview=True)
 
 def list_entry(update, context, admin_all=False):
-    first_message = update.message.reply_markdown(f"Working ...")
+    first_message = update.message.reply_markdown(f"用户列表查询中 ...")
     if admin_all == True:
         users = BUPTUser.select().where(BUPTUser.status == BUPTUserStatus.normal)
     else:
@@ -80,7 +66,8 @@ def list_entry(update, context, admin_all=False):
         users = tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed)
     ret_msg = ''
     for i, user in enumerate(users):
-        ret_msg += f'ID: `{i+1}`\n'
+        id = i+1
+        ret_msg += f'ID: `{id}`\n'
         if user.username != None:
             ret_msg += f'Username: `{user.username}`\n' #Password: `{user.password}`\n'
         else:
@@ -94,9 +81,12 @@ def list_entry(update, context, admin_all=False):
         else:
             ret_msg += f'最后签到时间: `{user.latest_response_time}`\n'
             ret_msg += f'最后签到返回: `{user.latest_response_data}`\n'
+        ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n'
         ret_msg += "\n"
-    if len(ret_msg) == 0:
+    if len(users) == 0:
         ret_msg = '用户列表为空'
+    if len(users) >= 2:
+        ret_msg += f'恢复全部 /resume  暂停全部 /pause\n签到全部 /checkin  删除全部 /remove\_all'
     logger.debug(ret_msg)
     first_message.edit_text(ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
     
@@ -121,6 +111,7 @@ def add_by_cookie_entry(update, context):
     )
     
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
+    list_entry(update, context)
 
 def add_by_uid_entry(update, context):
     if len(context.args) != 2:
@@ -142,21 +133,22 @@ def add_by_uid_entry(update, context):
     )
     
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
+    list_entry(update, context)
 
 def checkin_entry(update, context):
-    if len(context.args) > 0:
-        opid = context.args[0]
-        raise NotImplementedError('单个签到功能当前未实现')
-
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
-    
-    if tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed).count() == 0:
+    if len(context.args) > 0:
+        targets = tguser.get_buptusers_by_seqids(list(map(int, context.args)))
+    else:
+        targets = tguser.get_buptusers()
+
+    if len(targets) == 0:
         ret_msg = '用户列表为空'
         update.message.reply_markdown(ret_msg)
         return
-    for buptuser in tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed):
+    for buptuser in targets:
         try:
             ret = buptuser.ncov_checkin(force=True)
             ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到成功！\n服务器返回：`{ret}`"
@@ -168,7 +160,12 @@ def pause_entry(update, context):
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
-    for buptuser in tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed):
+    if len(context.args) > 0:
+        targets = tguser.get_buptusers_by_seqids(list(map(int, context.args)))
+    else:
+        targets = tguser.get_buptusers()
+
+    for buptuser in targets:
         buptuser.status = BUPTUserStatus.stopped
         buptuser.save()
         ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已暂停自动签到。"
@@ -178,21 +175,35 @@ def resume_entry(update, context):
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
-    for buptuser in tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed):
+    if len(context.args) > 0:
+        targets = tguser.get_buptusers_by_seqids(list(map(int, context.args)))
+    else:
+        targets = tguser.get_buptusers()
+
+    for buptuser in targets:
         buptuser.status = BUPTUserStatus.normal
         buptuser.save()
         ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已启用自动签到。"
         update.message.reply_markdown(ret_msg)
 
 def remove_entry(update, context):
+    assert len(context.args) > 0, "错误的命令，请用 /help 查看使用帮助。"
+
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
-    for buptuser in tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed):
+    if context.args[0].lower() != 'all':
+        targets = tguser.get_buptusers_by_seqids(list(map(int, context.args)))
+    else:
+        targets = tguser.get_buptusers()
+
+    for buptuser in targets:
         buptuser.status = BUPTUserStatus.removed
         buptuser.save()
         ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已删除。"
         update.message.reply_markdown(ret_msg)
+    
+    list_entry(update, context)
 
 def error_callback(update, context):
     """Log Errors caused by Updates."""
@@ -219,6 +230,12 @@ def status_entry(update, context):
     cron_data = "\n".join(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
     update.message.reply_text("Cronjob: " + cron_data)
     update.message.reply_text("System time: " + str(datetime.datetime.now()))
+
+def text_command_entry(update, context):
+    req_args = update.message.text.strip(f'@{updater.bot.username}').split('_')
+    command = req_args[0][1:]
+    context.args = list(filter(lambda i: i != '', req_args[1:]))
+    getattr(sys.modules[__name__], "%s_entry" % command)(update, context)
 
 def backup_db():
     logger.info("backup started!")
@@ -276,6 +293,7 @@ def main():
     dp.add_handler(CommandHandler("pause", pause_entry))
     dp.add_handler(CommandHandler("resume", resume_entry))
     dp.add_handler(CommandHandler("remove", remove_entry))
+    dp.add_handler(MessageHandler(Filters.regex(r'^/(remove|resume|pause|checkin)_.*$'), text_command_entry))
     dp.add_handler(CommandHandler("checkinall", checkinall_entry))
     dp.add_handler(CommandHandler("listall", listall_entry))
     dp.add_handler(CommandHandler("status", status_entry))
