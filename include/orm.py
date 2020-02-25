@@ -22,6 +22,18 @@ class TGUser(BaseModel):
     username = CharField(null=True, index=True)
     create_time = DateTimeField(default=datetime.datetime.now, index=True)
 
+    def get_buptusers_by_seqids(self, seqids: [int]):
+        available_targets = self.get_buptusers()
+        assert max(seqids) <= len(available_targets), "Seqid out of range."
+
+        return [available_targets[i-1] for i in seqids]
+    
+    def get_buptusers(self, include_all=False):
+        if include_all:
+            return self.buptusers
+        else:
+            return self.buptusers.where(BUPTUser.status != BUPTUserStatus.removed)
+
 class BUPTUser(BaseModel):
     id = AutoField()
     owner = ForeignKeyField(model=TGUser, backref='buptusers', lazy_load=False, index=True, on_delete="CASCADE", on_update="CASCADE")
