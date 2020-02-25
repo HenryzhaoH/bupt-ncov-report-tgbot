@@ -232,7 +232,7 @@ def status_entry(update, context):
     update.message.reply_text("System time: " + str(datetime.datetime.now()))
 
 def text_command_entry(update, context):
-    req_args = update.message.text.split('_')
+    req_args = update.message.text.strip(f'@{updater.bot.username}').split('_')
     command = req_args[0][1:]
     context.args = list(filter(lambda i: i != '', req_args[1:]))
     getattr(sys.modules[__name__], "%s_entry" % command)(update, context)
