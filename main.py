@@ -1,16 +1,17 @@
 from include import *
 from peewee import SqliteDatabase
-import argparse, traceback, sys, datetime
+import argparse, traceback, sys, datetime, requests
 from shutil import copyfile
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, DispatcherHandlerStop
 import telegram
 
 def tguser_check(update, context):
     if BOT_DEBUG == True and update.message.from_user.id != TG_BOT_MASTER:
-        raise Exception("DEBUGGING, Try again later.")
+        update.message.reply_text("DEBUGGING, Try again later.")
+        raise DispatcherHandlerStop()
 
     user, _ = TGUser.get_or_create(
         userid = update.message.from_user.id
@@ -27,32 +28,7 @@ def start_entry(update, context):
 
 def help_entry(update, context):
     """Send a message when the command /help is issued."""
-    help_text='''
-自动签到时间：每日0点5分
-请在使用本 bot 前，确保已经正确提交过一次上报。
-本 bot 的目标签到系统为：[app.bupt.edu.cn/ncov/...](https://app.bupt.edu.cn/ncov/wap/default/index)
-
-/list
-  列出所有签到用户
-/checkin
-  立即执行签到
-
-/add\_by\_uid `用户名/学号` `密码` 
-  用户信息为统一身份认证 UIS 系统
-  通过用户名与密码添加签到用户
-  **建议您[修改密码](https://auth.bupt.edu.cn/authserver/passwordChange.do)为随机密码后再进行本操作**
-  例：/add\_by\_uid `2010211000 password123`
-
-/add\_by\_cookie `eai-sess` `UUKey`
-  通过[签到网站](https://app.bupt.edu.cn/ncov/wap/default/index) Cookie 信息添加用户 (eai-sess, UUKey)
-  *如果您不明白这是什么，请使用上一条命令添加用户*
-  例：/add\_by\_cookie `1cmgkrrcssge6edkkg3ucigj1m 44f522350f5e843fbac58b726753eb36`
-
-工作原理与位置变更须知：
-从网页上获取上一次成功签到的数据，处理后再次提交。
-因此，如果您改变了城市（如返回北京），请先使用 /pause 暂停自动签到，并 **【连续两天】** 手动签到成功后，再使用 /resume 恢复自动签到。
-'''
-    update.message.reply_markdown(help_text.strip(), disable_web_page_preview=True)
+    update.message.reply_markdown(HELP_MARKDOWN.strip(), disable_web_page_preview=True)
 
 def list_entry(update, context, admin_all=False):
     first_message = update.message.reply_markdown(f"用户列表查询中 ...")
@@ -80,7 +56,7 @@ def list_entry(update, context, admin_all=False):
             ret_msg += '从未尝试签到\n'
         else:
             ret_msg += f'最后签到时间: `{user.latest_response_time}`\n'
-            ret_msg += f'最后签到返回: `{user.latest_response_data}`\n'
+            ret_msg += f'最后签到返回: `{user.latest_response_data[:100]}`\n'
         ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n'
         ret_msg += "\n"
     if len(users) == 0:
@@ -150,10 +126,12 @@ def checkin_entry(update, context):
         return
     for buptuser in targets:
         try:
-            ret = buptuser.ncov_checkin(force=True)
+            ret = buptuser.ncov_checkin(force=True)[:100]
             ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到成功！\n服务器返回：`{ret}`"
+        except requests.exceptions.Timeout as e:
+            ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到失败，服务器错误！\n`{e}`"
         except Exception as e:
-            ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到失败！\n{e}"
+            ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到异常！\n服务器返回：`{e}`"
         update.message.reply_markdown(ret_msg)
 
 def pause_entry(update, context):
@@ -214,7 +192,7 @@ def error_callback(update, context):
 def tg_debug_logging(update,context):
     log_str = 'User %s %d: "%s"' % (update.message.from_user.username, update.message.from_user.id, update.message.text)
     logger.info(log_str)
-    if update.message.from_user.id != TG_BOT_MASTER :
+    if not update.message.text.startswith('/'):
         updater.bot.send_message(chat_id=TG_BOT_MASTER, text="[LOG] "+ log_str)
 
 def checkinall_entry(update, context):
@@ -251,12 +229,15 @@ def checkin_all():
     for user in BUPTUser.select().where(BUPTUser.status == BUPTUserStatus.normal).prefetch(TGUser):
         ret_msg = ''
         try:
-            ret = user.ncov_checkin()
+            ret = user.ncov_checkin()[:100]
             ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
-        except Exception as e:
-            ret_msg = f'错误！\n{e}\n{datetime.datetime.now()}'
+        except requests.exceptions.Timeout as e:
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到失败，服务器错误，请尝试手动签到！\nhttps://app.bupt.edu.cn/ncov/wap/default/index\n`{e}`\n{datetime.datetime.now()}"
             traceback.print_exc()
-        logger.debug(ret_msg)
+        except Exception as e:
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
+            traceback.print_exc()
+        logger.info(ret_msg)
         updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
     logger.info("checkin_all finished!")
 
@@ -282,7 +263,7 @@ def main():
     dp = updater.dispatcher
 
     # on different commands - answer in Telegram
-    # dp.add_handler(MessageHandler(Filters.all, tg_debug_logging), -10)
+    dp.add_handler(MessageHandler(Filters.all, tg_debug_logging), -10)
     dp.add_handler(MessageHandler(Filters.all, tguser_check), -1)
     dp.add_handler(CommandHandler("start", start_entry))
     dp.add_handler(CommandHandler("help", help_entry))

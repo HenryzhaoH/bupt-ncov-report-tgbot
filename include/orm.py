@@ -66,7 +66,7 @@ class BUPTUser(BaseModel):
         login_resp = session.post(LOGIN_API, data={
             'username': self.username,
             'password': self.password,
-        })
+        }, timeout=API_TIMEOUT)
         _logger.debug(login_resp.text)
         if login_resp.status_code != 200:
             raise RuntimeError('Login Server ERROR!')
@@ -93,7 +93,7 @@ class BUPTUser(BaseModel):
             }
             requests.utils.add_dict_to_cookiejar(session.cookies, cookies)
 
-        report_page_resp = session.get(REPORT_PAGE, allow_redirects=False)
+        report_page_resp = session.get(REPORT_PAGE, allow_redirects=False, timeout=API_TIMEOUT)
         _logger.debug(f'[report page] status: {report_page_resp.status_code}')
         if report_page_resp.status_code == 302:
             if self.username != None:
@@ -103,12 +103,12 @@ class BUPTUser(BaseModel):
                 self.status = BUPTUserStatus.warning
                 self.save()
                 raise RuntimeWarning(f'Cookies expired with no login info set. Please update your cookie. \neai-sess:`{self.cookie_eaisess}`')
-            report_page_resp = session.get(REPORT_PAGE, allow_redirects=False)
+            report_page_resp = session.get(REPORT_PAGE, allow_redirects=False, timeout=API_TIMEOUT)
         if report_page_resp.status_code != 200:
             RuntimeError(f'Report Page returned {report_page_resp.status_code}.')
 
         page_html = report_page_resp.text
-        assert 'realname' in page_html
+        assert 'realname' in page_html, "报告页面返回信息不正确"
 
         # 从上报页面中提取 POST 的参数
         post_data = extract_post_data(page_html)
@@ -117,13 +117,19 @@ class BUPTUser(BaseModel):
         _logger.debug(f'[report api] Final data: {json.dumps(post_data)}')
 
         # 最终 POST
-        report_api_resp = session.post(REPORT_API, post_data)
-        assert report_api_resp.status_code == 200
+        report_api_resp = session.post(REPORT_API, post_data,
+            headers={'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}, 
+            timeout=API_TIMEOUT
+        )
+        assert report_api_resp.status_code == 200, "提交 API 状态异常"
         self.latest_response_data = report_api_resp.text.strip()
         self.latest_response_time = datetime.datetime.now()
         self.save()
 
-        return report_api_resp.text.strip()
+        if report_api_resp.json()['e'] == 0:
+            return report_api_resp.text.strip()
+        else:
+            raise Exception(report_api_resp.text.strip())
         
 
 def db_init():
