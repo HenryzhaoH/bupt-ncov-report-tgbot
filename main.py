@@ -254,7 +254,7 @@ def main():
         db_init()
         exit(0)
 
-    scheduler.add_job(func=checkin_all, id='checkin_all', trigger="cron", hour=0, minute=5, max_instances=1, replace_existing=False)
+    scheduler.add_job(func=checkin_all, id='checkin_all', trigger="cron", hour=CRON_HOUR, minute=CRON_MINUTE, max_instances=1, replace_existing=False)
     scheduler.start()
     print(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
 

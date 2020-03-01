@@ -2,7 +2,10 @@
 LOGIN_API = 'https://app.bupt.edu.cn/uc/wap/login/check'
 REPORT_PAGE = 'https://app.bupt.edu.cn/ncov/wap/default/index'
 REPORT_API = 'https://app.bupt.edu.cn/ncov/wap/default/save'
-API_TIMEOUT = 5 # in seconds
+API_TIMEOUT = 20 # in seconds
+
+CRON_HOUR = 0
+CRON_MINUTE = 10
 
 REASONABLE_LENGTH = 24
 
@@ -13,7 +16,7 @@ TG_BOT_MASTER = 0   # Master Telegram User ID
 BOT_DEBUG = False
 
 HELP_MARKDOWN='''
-自动签到时间：每日0点5分
+自动签到时间：每日0点10分
 请在使用本 bot 前，确保已经正确提交过一次上报。
 本 bot 的目标签到系统为：[app.bupt.edu.cn/ncov/...](https://app.bupt.edu.cn/ncov/wap/default/index)
 
