@@ -5,3 +5,7 @@
 ## Notice
 
 Run `python main.py --initdb` first.
+
+## Credit
+
+Special thanks to [ipid/bupt-ncov-report](https://github.com/ipid/bupt-ncov-report).
