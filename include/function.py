@@ -38,7 +38,42 @@ def extract_post_data(html: str, old_data=None) -> Dict[str, str]:
         _logger.debug(f'\nold_data: {old_data}\nnew_data: {new_data}')
         raise ValueError('获取到的数据过短。请阅读脚本文档的“使用前提”部分')
 
-    # 用原页面的“def”变量的值，覆盖掉“oldInfo”变量的值
     old_data, new_data = json.loads(old_data), json.loads(new_data)
-    old_data.update(new_data)
+
+    # 需要从 new dict 中提取如下数据
+    PICK_PROPS = (
+        'id', 'uid', 'date', 'created',
+    )
+
+    for prop in PICK_PROPS:
+        val = new_data.get(prop, ...)
+        if val is ...:
+            raise RuntimeError(f'从网页上提取的 new data 中缺少属性 {prop}，可能网页已经改版。')
+        old_data[prop] = val
+
+    SANITIZE_PROPS = {
+        'ismoved': 0,
+        'jhfjrq': '',
+        'jhfjjtgj': '',
+        'jhfjhbcc': '',
+        'sfxk': 0,
+        'xkqq': '',
+        # Moved info sanitize
+        'sfsfbh': 0, 
+        'ismoved': 0,
+        'xjzd': '',
+        'bztcyy': '',
+    }
+    old_data.update(SANITIZE_PROPS)
+    
+    try:
+        if len(old_data['address']) == 0:
+            geo_info = json.loads(old_data['geo_api_info'])
+            old_data['address'] = geo_info['formattedAddress']
+            old_data['province'] = geo_info['addressComponent']['province']
+            old_data['city'] = geo_info['addressComponent']['city']
+            old_data['area'] = ' '.join([old_data['province'], old_data['city'], geo_info['addressComponent']['district']])
+    except json.decoder.JSONDecodeError as e:
+        raise RuntimeError(f'定位信息为空，自动修复地址信息失败。手动上报一次后方可正常使用。')
+
     return old_data
