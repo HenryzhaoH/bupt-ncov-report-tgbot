@@ -302,16 +302,19 @@ def main():
 
 
 if __name__ == "__main__":
+    log_filename=f'log/{str(datetime.datetime.now()).replace(":","").replace(" ","_")}.log'
     logging.basicConfig(
+        handlers=[
+            logging.FileHandler(
+                filename=log_filename, 
+                encoding='utf-8'
+            ),
+            logging.StreamHandler(sys.stdout)
+        ],
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-        level=logging.DEBUG, 
-        filename=f'log/{str(datetime.datetime.now()).replace(":","").replace(" ","_")}.log'
+        level=logging.INFO
     )
     logger = logging.getLogger(__name__)
-
-    sh = logging.StreamHandler(sys.stdout)
-    sh.setLevel(logging.DEBUG)
-    logger.addHandler(sh)
 
     scheduler = BackgroundScheduler()
     
