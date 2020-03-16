@@ -197,7 +197,11 @@ def tg_debug_logging(update,context):
 
 def checkinall_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
-    checkin_all()
+    if len(context.args) > 0:
+        if context.args[0] == 'retry':
+            checkin_all_retry()
+    else:
+        checkin_all()
 
 def listall_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
@@ -225,6 +229,26 @@ def backup_db():
     copyfile('./my_app.db', './backup/my_app.{}.db'.format(str(datetime.datetime.now()).replace(":","").replace(" ","_")))
     logger.info("backup finished!")
 
+def checkin_all_retry():
+    logger.info("checkin_all_retry started!")
+    for user in BUPTUser.select().where(
+        (BUPTUser.status == BUPTUserStatus.normal)
+        & (BUPTUser.latest_response_time < datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()))
+    ).prefetch(TGUser):
+        ret_msg = ''
+        try:
+            ret = user.ncov_checkin()[:100]
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
+        except requests.exceptions.Timeout as e:
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到失败，服务器错误，请尝试手动签到！\nhttps://app.bupt.edu.cn/ncov/wap/default/index\n`{e}`\n{datetime.datetime.now()}"
+            traceback.print_exc()
+        except Exception as e:
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
+            traceback.print_exc()
+        logger.info(ret_msg)
+        updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+    logger.info("checkin_all_retry finished!")
+
 def checkin_all():
     try:
         backup_db()
@@ -237,7 +261,7 @@ def checkin_all():
             ret = user.ncov_checkin()[:100]
             ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
         except requests.exceptions.Timeout as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到失败，服务器错误，请尝试手动签到！\nhttps://app.bupt.edu.cn/ncov/wap/default/index\n`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到失败，服务器错误，将重试！\n`{e}`\n{datetime.datetime.now()}"
             traceback.print_exc()
         except Exception as e:
             ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
@@ -259,9 +283,26 @@ def main():
         db_init()
         exit(0)
 
-    scheduler.add_job(func=checkin_all, id='checkin_all', trigger="cron", hour=CRON_HOUR, minute=CRON_MINUTE, max_instances=1, replace_existing=False)
+    scheduler.add_job(
+        func=checkin_all, 
+        id='checkin_all', 
+        trigger="cron", 
+        hour=CRON_HOUR, 
+        minute=CRON_MINUTE, 
+        max_instances=1, 
+        replace_existing=False
+    )
+    scheduler.add_job(
+        func=checkin_all_retry, 
+        id='checkin_all_retry', 
+        trigger="cron", 
+        hour=CRON_REDO_HOUR, 
+        minute=CRON_REDO_MINUTE, 
+        max_instances=1, 
+        replace_existing=False
+    )
     scheduler.start()
-    print(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
+    logger.info(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
 
     updater = Updater(TG_BOT_TOKEN, request_kwargs=TG_BOT_PROXY, use_context=True)
     # Get the dispatcher to register handlers
@@ -302,12 +343,11 @@ def main():
 
 
 if __name__ == "__main__":
-    log_filename=f'log/{str(datetime.datetime.now()).replace(":","").replace(" ","_")}.log'
     logging.basicConfig(
         handlers=[
-            logging.FileHandler(
-                filename=log_filename, 
-                encoding='utf-8'
+            logging.handlers.TimedRotatingFileHandler(
+                "log/main", when='midnight', backupCount=30, encoding='utf-8',
+                atTime=datetime.time(hour=0, minute=0)
             ),
             logging.StreamHandler(sys.stdout)
         ],
