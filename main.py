@@ -190,10 +190,20 @@ def error_callback(update, context):
     traceback.print_exc()
 
 def tg_debug_logging(update,context):
-    log_str = 'User %s %d: "%s"' % (update.message.from_user.username, update.message.from_user.id, update.message.text)
+    log_str = 'User %s `%d`: "%s"' % (update.message.from_user.username, update.message.from_user.id, update.message.text)
     logger.info(log_str)
-    if not update.message.text.startswith('/'):
-        updater.bot.send_message(chat_id=TG_BOT_MASTER, text="[LOG] "+ log_str)
+
+    # Skip forwarding when command call.
+    if update.message.text is not None and update.message.text.startswith('/'):
+        return
+    # Skip master message
+    if update.message.from_user.id == TG_BOT_MASTER:
+        return
+    
+    updater.bot.send_message(chat_id=TG_BOT_MASTER, text="[LOG] "+ log_str, parse_mode = telegram.ParseMode.MARKDOWN)
+    # Forward non-text message, like stickers.
+    if update.message.text is None:
+        updater.bot.forward_message(TG_BOT_MASTER, update.message.chat_id, update.message.message_id)
 
 def checkinall_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
