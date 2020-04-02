@@ -58,6 +58,8 @@ def extract_post_data(html: str, old_data=None) -> Dict[str, str]:
         'jhfjhbcc': '',
         'sfxk': 0,
         'xkqq': '',
+        'szgj': '',
+        'szcs': '',
         # Moved info sanitize
         'sfsfbh': 0, 
         'ismoved': 0,
@@ -67,11 +69,18 @@ def extract_post_data(html: str, old_data=None) -> Dict[str, str]:
     old_data.update(SANITIZE_PROPS)
     
     try:
-        if len(old_data['address']) == 0:
+        if len(old_data['address']) == 0 \
+        or (
+            len(old_data['city']) == 0 \
+            and old_data['province'] in ['北京市','上海市','重庆市','天津市'] 
+        ):
             geo_info = json.loads(old_data['geo_api_info'])
             old_data['address'] = geo_info['formattedAddress']
             old_data['province'] = geo_info['addressComponent']['province']
-            old_data['city'] = geo_info['addressComponent']['city']
+            if old_data['province'] in ['北京市','上海市','重庆市','天津市']:
+                old_data['city'] = geo_info['addressComponent']['province']
+            else:
+                old_data['city'] = geo_info['addressComponent']['city']
             old_data['area'] = ' '.join([old_data['province'], old_data['city'], geo_info['addressComponent']['district']])
     except json.decoder.JSONDecodeError as e:
         raise RuntimeError(f'定位信息为空，自动修复地址信息失败。手动上报一次后方可正常使用。')
