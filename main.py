@@ -33,21 +33,27 @@ def help_entry(update, context):
 def list_entry(update, context, admin_all=False):
     first_message = update.message.reply_markdown(f"用户列表查询中 ...")
     if admin_all == True:
-        users = BUPTUser.select().where(BUPTUser.status == BUPTUserStatus.normal)
+        users = BUPTUser.select().where(BUPTUser.status != BUPTUserStatus.removed).prefetch(TGUser)
     else:
         # users = BUPTUser.select().where(BUPTUser.owner == update.message.from_user.id).order_by(BUPTUser.id.asc())
         tguser = TGUser.get(
             userid = update.message.from_user.id
         )
         users = tguser.buptusers.where(BUPTUser.status != BUPTUserStatus.removed)
+    ret_msgs = []
     ret_msg = ''
     for i, user in enumerate(users):
+        if i % 10 == 0 and i != 0:
+            ret_msgs.append(ret_msg)
+            ret_msg = ''
         id = i+1
         ret_msg += f'ID: `{id}`\n'
         if user.username != None:
             ret_msg += f'Username: `{user.username}`\n' #Password: `{user.password}`\n'
         else:
             ret_msg += f'eai-sess: `{user.cookie_eaisess}`\n' #UUKey: `{user.cookie_uukey}`\n'
+        if admin_all:
+            ret_msg += f'Owner: `{user.owner.userid}` `{user.owner.username.replace("`","")}`\n'
         if user.status == BUPTUserStatus.normal:
             ret_msg += f'自动签到: `启用`\n'
         else:
@@ -57,14 +63,20 @@ def list_entry(update, context, admin_all=False):
         else:
             ret_msg += f'最后签到时间: `{user.latest_response_time}`\n'
             ret_msg += f'最后签到返回: `{user.latest_response_data[:100]}`\n'
-        ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n'
+        if not admin_all:
+            ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n'
         ret_msg += "\n"
+    ret_msgs.append(ret_msg)
+        
     if len(users) == 0:
-        ret_msg = '用户列表为空'
-    if len(users) >= 2:
-        ret_msg += f'恢复全部 /resume  暂停全部 /pause\n签到全部 /checkin  删除全部 /remove\_all'
-    logger.debug(ret_msg)
-    first_message.edit_text(ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        ret_msgs = ['用户列表为空']
+    if len(users) >= 2 and not admin_all:
+        ret_msgs[-1] += f'恢复全部 /resume  暂停全部 /pause\n签到全部 /checkin  删除全部 /remove\_all'
+    logger.debug(ret_msgs)
+
+    first_message.delete()
+    for msg in ret_msgs:
+        update.message.reply_markdown(msg)
     
 
 def add_by_cookie_entry(update, context):
