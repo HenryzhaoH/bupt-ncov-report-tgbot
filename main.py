@@ -312,7 +312,8 @@ def main():
         hour=CRON_HOUR, 
         minute=CRON_MINUTE, 
         max_instances=1, 
-        replace_existing=False
+        replace_existing=False,
+        misfire_grace_time=10,
     )
     scheduler.add_job(
         func=checkin_all_retry, 
@@ -321,7 +322,8 @@ def main():
         hour=CRON_REDO_HOUR, 
         minute=CRON_REDO_MINUTE, 
         max_instances=1, 
-        replace_existing=False
+        replace_existing=False,
+        misfire_grace_time=10,
     )
     scheduler.start()
     logger.info(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
