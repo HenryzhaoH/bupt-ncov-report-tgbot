@@ -328,8 +328,8 @@ def main():
         func=checkin_all_retry, 
         id='checkin_all_retry', 
         trigger="cron", 
-        hour=CRON_REDO_HOUR, 
-        minute=CRON_REDO_MINUTE, 
+        hour=CRON_RETRY_HOUR, 
+        minute=CRON_RETRY_MINUTE, 
         max_instances=1, 
         replace_existing=False,
         misfire_grace_time=10,
@@ -390,6 +390,6 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(__name__)
 
-    scheduler = BackgroundScheduler()
+    scheduler = BackgroundScheduler(timezone=CRON_TIMEZONE)
     
     main()

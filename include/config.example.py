@@ -4,10 +4,11 @@ REPORT_PAGE = 'https://app.bupt.edu.cn/ncov/wap/default/index'
 REPORT_API = 'https://app.bupt.edu.cn/ncov/wap/default/save'
 API_TIMEOUT = 20 # in seconds
 
+CRON_TIMEZONE = 'Asia/Shanghai'
 CRON_HOUR = 0
 CRON_MINUTE = 10
-CRON_REDO_HOUR   = 0
-CRON_REDO_MINUTE = 25
+CRON_RETRY_HOUR   = 0
+CRON_RETRY_MINUTE = 25
 
 REASONABLE_LENGTH = 24
 
