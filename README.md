@@ -16,7 +16,7 @@ Run `pip install -r requirements.txt` to install required components.
 3. Run `python main.py --initdb` **once** to initialize SQLite database (my_app.db).
 4. Run `python main.py` to start the bot. 
 
-By default, the bot will checkin all the normal accounts at 0:10 *local time*, and retry the failed ones at 0:25.
+By default, the bot will checkin all the normal accounts at 0:10 *UTC+8*, and retry the failed ones at 0:25.
 You can change this behavior in `include/config.py`.
 
 ## How it works
