@@ -239,6 +239,15 @@ def send_message_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
     updater.bot.send_message(chat_id=context.args[0], text=' '.join(update.message.text.split(' ')[2:]))
 
+def broadcast_entry(update, context):
+    assert update.message.from_user.id == TG_BOT_MASTER
+    active_userids = set()
+    for user in BUPTUser.select().where(
+        (BUPTUser.status == BUPTUserStatus.normal)
+    ).prefetch(TGUser):
+        active_userids.add(user.owner.userid)
+    for userid in active_userids:
+        updater.bot.send_message(chat_id=userid, text=' '.join(update.message.text.split(' ')[1:]))
 
 def text_command_entry(update, context):
     req_args = update.message.text.strip(f'@{updater.bot.username}').split('_')
@@ -349,6 +358,7 @@ def main():
     dp.add_handler(CommandHandler("listall", listall_entry))
     dp.add_handler(CommandHandler("status", status_entry))
     dp.add_handler(CommandHandler("sendmsg", send_message_entry))
+    dp.add_handler(CommandHandler("broadcast", broadcast_entry))
     #dp.add_handler(MessageHandler(Filters.command, no_such_command),10)
 
     # on noncommand i.e message - echo the message on Telegram
