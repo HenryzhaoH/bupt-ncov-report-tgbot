@@ -62,9 +62,14 @@ def extract_post_data(html: str, old_data=None) -> Dict[str, str]:
         'szcs': '',
         # Moved info sanitize
         'sfsfbh': 0, 
-        'ismoved': 0,
         'xjzd': '',
         'bztcyy': '',
+        'zgfxdq': 0,
+        'mjry': 0,
+        'csmjry': 0,
+        # Misc info sanitize
+        'gwszdd': '',
+        'sfyqjzgc': '',
     }
     old_data.update(SANITIZE_PROPS)
     
