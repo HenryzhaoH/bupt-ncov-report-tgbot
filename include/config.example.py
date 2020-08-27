@@ -1,7 +1,7 @@
 
-LOGIN_API = 'https://app.bupt.edu.cn/uc/wap/login/check'
-REPORT_PAGE = 'https://app.bupt.edu.cn/ncov/wap/default/index'
-REPORT_API = 'https://app.bupt.edu.cn/ncov/wap/default/save'
+LOGIN_API = 'https://app.cupl.edu.cn/uc/wap/login/check'
+REPORT_PAGE = 'https://app.cupl.edu.cn/ncov/wap/default/index'
+REPORT_API = 'https://app.cupl.edu.cn/ncov/wap/default/save'
 API_TIMEOUT = 20 # in seconds
 
 CRON_TIMEZONE = 'Asia/Shanghai'
@@ -21,7 +21,7 @@ BOT_DEBUG = False
 HELP_MARKDOWN='''
 自动签到时间：每日0点10分
 请在使用本 bot 前，确保已经正确提交过一次上报。
-本 bot 的目标签到系统为：[app.bupt.edu.cn/ncov/...](https://app.bupt.edu.cn/ncov/wap/default/index)
+本 bot 的目标签到系统为：[app.cupl.edu.cn/ncov/...](https://app.cupl.edu.cn/ncov/wap/default/index)
 
 /list
   列出所有签到用户
@@ -31,11 +31,11 @@ HELP_MARKDOWN='''
 /add\_by\_uid `用户名/学号` `密码` 
   用户信息为统一身份认证 UIS 系统
   通过用户名与密码添加签到用户
-  **建议您[修改密码](https://auth.bupt.edu.cn/authserver/passwordChange.do)为随机密码后再进行本操作**
+  **建议您前往智慧法大[修改密码](http://ca.cupl.edu.cn/tpass/pwd)为随机密码后再进行本操作**
   例：/add\_by\_uid `2010211000 password123`
 
 /add\_by\_cookie `eai-sess` `UUKey`
-  通过[签到网站](https://app.bupt.edu.cn/ncov/wap/default/index) Cookie 信息添加用户 (eai-sess, UUKey)
+  通过[签到网站](https://app.cupl.edu.cn/ncov/wap/default/index) Cookie 信息添加用户 (eai-sess, UUKey)
   *如果您不明白这是什么，请使用上一条命令添加用户*
   例：/add\_by\_cookie `1cmgkrrcssge6edkkg3ucigj1m 44f522350f5e843fbac58b726753eb36`
 
