@@ -66,7 +66,7 @@ class BUPTUser(BaseModel):
         login_resp = session.post(LOGIN_API, data={
             'username': self.username,
             'password': self.password,
-        }, timeout=API_TIMEOUT)
+        }, timeout=API_TIMEOUT,verify=False)
         _logger.debug(login_resp.text)
         if login_resp.status_code != 200:
             raise RuntimeError('Login Server ERROR!')
@@ -93,7 +93,7 @@ class BUPTUser(BaseModel):
             }
             requests.utils.add_dict_to_cookiejar(session.cookies, cookies)
 
-        report_page_resp = session.get(REPORT_PAGE, allow_redirects=False, timeout=API_TIMEOUT)
+        report_page_resp = session.get(REPORT_PAGE, allow_redirects=False, timeout=API_TIMEOUT,verify=False)
         _logger.debug(f'[report page] status: {report_page_resp.status_code}')
         if report_page_resp.status_code == 302:
             if self.username != None:
@@ -103,7 +103,7 @@ class BUPTUser(BaseModel):
                 self.status = BUPTUserStatus.warning
                 self.save()
                 raise RuntimeWarning(f'Cookies expired with no login info set. Please update your cookie. \neai-sess:`{self.cookie_eaisess}`')
-            report_page_resp = session.get(REPORT_PAGE, allow_redirects=False, timeout=API_TIMEOUT)
+            report_page_resp = session.get(REPORT_PAGE, allow_redirects=False, timeout=API_TIMEOUT,verify=False)
         if report_page_resp.status_code != 200:
             RuntimeError(f'Report Page returned {report_page_resp.status_code}.')
 
