@@ -1,6 +1,6 @@
-# BUPT 2019-nCoV Report Bot
+# CUPL COVID19 Report Bot
 
-[Click here to try Online](https://t.me/buptncovbot)
+[Click here to try Online](https://t.me/cuplcovidbot)
 
 ## Requirements
 
