@@ -36,4 +36,4 @@ Pull requests and issues are always welcome.
 
 ## Credit
 
-Special thanks to [ipid/bupt-ncov-report](https://github.com/ipid/bupt-ncov-report).
+Special thanks to [ipid/bupt-ncov-report](https://github.com/ipid/bupt-ncov-report)and [Henryzhao96/bupt-ncov-report-tgbot](https://github.cpm/Henryzhao96/bupt-ncov-report-tgbot)
