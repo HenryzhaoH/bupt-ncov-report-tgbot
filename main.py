@@ -67,7 +67,7 @@ def list_entry(update, context, admin_all=False):
             ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n'
         ret_msg += "\n"
     ret_msgs.append(ret_msg)
-        
+
     if len(users) == 0:
         ret_msgs = ['用户列表为空']
     if len(users) >= 2 and not admin_all:
@@ -77,7 +77,7 @@ def list_entry(update, context, admin_all=False):
     first_message.delete()
     for msg in ret_msgs:
         update.message.reply_markdown(msg)
-    
+
 
 def add_by_cookie_entry(update, context):
     if len(context.args) != 2:
@@ -97,7 +97,7 @@ def add_by_cookie_entry(update, context):
         cookie_uukey = uukey,
         status = BUPTUserStatus.normal
     )
-    
+
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
     list_entry(update, context)
 
@@ -119,7 +119,7 @@ def add_by_uid_entry(update, context):
         password = password,
         status = BUPTUserStatus.normal
     )
-    
+
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
     list_entry(update, context)
 
@@ -192,7 +192,7 @@ def remove_entry(update, context):
         buptuser.save()
         ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已删除。"
         update.message.reply_markdown(ret_msg)
-    
+
     list_entry(update, context)
 
 def error_callback(update, context):
@@ -211,7 +211,7 @@ def tg_debug_logging(update,context):
     # Skip master message
     if update.message.from_user.id == TG_BOT_MASTER:
         return
-    
+
     updater.bot.send_message(chat_id=TG_BOT_MASTER, text="[LOG] "+ log_str, parse_mode = telegram.ParseMode.MARKDOWN)
     # Forward non-text message, like stickers.
     if update.message.text is None:
@@ -306,7 +306,7 @@ def main():
     parser = argparse.ArgumentParser(description='BUPT 2019-nCoV Report Bot')
     parser.add_argument('--initdb', default=False, action='store_true')
     args = parser.parse_args()
-    
+
     database = SqliteDatabase('my_app.db')
     database_proxy.initialize(database)
 
@@ -315,22 +315,22 @@ def main():
         exit(0)
 
     scheduler.add_job(
-        func=checkin_all, 
-        id='checkin_all', 
-        trigger="cron", 
-        hour=CRON_HOUR, 
-        minute=CRON_MINUTE, 
-        max_instances=1, 
+        func=checkin_all,
+        id='checkin_all',
+        trigger="cron",
+        hour=CHECKIN_ALL_CRON_HOUR,
+        minute=CHECKIN_ALL_CRON_MINUTE,
+        max_instances=1,
         replace_existing=False,
         misfire_grace_time=10,
     )
     scheduler.add_job(
-        func=checkin_all_retry, 
-        id='checkin_all_retry', 
-        trigger="cron", 
-        hour=CRON_RETRY_HOUR, 
-        minute=CRON_RETRY_MINUTE, 
-        max_instances=1, 
+        func=checkin_all_retry,
+        id='checkin_all_retry',
+        trigger="cron",
+        hour=CHECKIN_ALL_CRON_RETRY_HOUR,
+        minute=CHECKIN_ALL_CRON_RETRY_MINUTE,
+        max_instances=1,
         replace_existing=False,
         misfire_grace_time=10,
     )
@@ -385,11 +385,11 @@ if __name__ == "__main__":
             ),
             logging.StreamHandler(sys.stdout)
         ],
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
     )
     logger = logging.getLogger(__name__)
 
     scheduler = BackgroundScheduler(timezone=CRON_TIMEZONE)
-    
+
     main()
