@@ -63,15 +63,22 @@ def list_entry(update, context, admin_all=False):
         else:
             ret_msg += f'最后签到时间: `{user.latest_response_time}`\n'
             ret_msg += f'最后签到返回: `{user.latest_response_data[:100]}`\n'
+
+        if user.latest_xisu_checkin_response_data == None:
+            ret_msg += '从未尝试晨午晚检签到\n'
+        else:
+            ret_msg += f'最后晨午晚检签到时间: `{user.latest_xisu_checkin_response_time}`\n'
+            ret_msg += f'最后晨午晚检签到返回: `{user.latest_xisu_checkin_response_data[:100]}`\n'
+
         if not admin_all:
-            ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n'
+            ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n晨午晚检签到 /checkinxisu\_{id}\n'
         ret_msg += "\n"
     ret_msgs.append(ret_msg)
 
     if len(users) == 0:
         ret_msgs = ['用户列表为空']
     if len(users) >= 2 and not admin_all:
-        ret_msgs[-1] += f'恢复全部 /resume  暂停全部 /pause\n签到全部 /checkin  删除全部 /remove\_all'
+        ret_msgs[-1] += f'恢复全部 /resume  暂停全部 /pause\n签到全部 /checkin  删除全部 /remove\_all \n晨午晚检签到 /checkinxisu'
     logger.debug(ret_msgs)
 
     first_message.delete()
@@ -146,7 +153,7 @@ def checkin_entry(update, context):
             ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到异常！\n服务器返回：`{e}`"
         update.message.reply_markdown(ret_msg)
 
-def xisu_checkin_entry(update, context):
+def checkinxisu_entry(update, context):
     tguser = TGUser.get(
         userid = update.message.from_user.id
     )
@@ -248,13 +255,13 @@ def checkinall_entry(update, context):
     else:
         checkin_all()
 
-def xisu_checkinall_entry(update, context):
+def checkinallxisu_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
     if len(context.args) > 0:
         if context.args[0] == 'retry':
-            xisu_checkin_all_retry()
+            checkin_all_xisu_retry()
     else:
-        xisu_checkin_all()
+        checkin_all_xisu()
 
 def listall_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
@@ -332,7 +339,7 @@ def checkin_all():
         updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
     logger.info("checkin_all finished!")
 
-def xisu_checkin_all_retry():
+def checkin_all_xisu_retry():
     global logger, updater
     logger.info("xisu_checkin_all_retry started!")
     for user in BUPTUser.select().where(
@@ -353,7 +360,7 @@ def xisu_checkin_all_retry():
         updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
     logger.info("xisu_checkin_all_retry finished!")
 
-def xisu_checkin_all():
+def checkin_all_xisu():
     global logger, updater
     try:
         backup_db()
@@ -401,13 +408,13 @@ def main():
     dp.add_handler(CommandHandler("add_by_uid", add_by_uid_entry))
     dp.add_handler(CommandHandler("add_by_cookie", add_by_cookie_entry))
     dp.add_handler(CommandHandler("checkin", checkin_entry))
-    dp.add_handler(CommandHandler("xisu_checkin", xisu_checkin_entry))
+    dp.add_handler(CommandHandler("checkinxisu", checkinxisu_entry))
     dp.add_handler(CommandHandler("pause", pause_entry))
     dp.add_handler(CommandHandler("resume", resume_entry))
     dp.add_handler(CommandHandler("remove", remove_entry))
-    dp.add_handler(MessageHandler(Filters.regex(r'^/(remove|resume|pause|checkin)_.*$'), text_command_entry))
+    dp.add_handler(MessageHandler(Filters.regex(r'^/(remove|resume|pause|checkin|checkinxisu)_.*$'), text_command_entry))
     dp.add_handler(CommandHandler("checkinall", checkinall_entry))
-    dp.add_handler(CommandHandler("xisu_checkinall", xisu_checkinall_entry))
+    dp.add_handler(CommandHandler("checkinallxisu", checkinallxisu_entry))
     dp.add_handler(CommandHandler("listall", listall_entry))
     dp.add_handler(CommandHandler("status", status_entry))
     dp.add_handler(CommandHandler("sendmsg", send_message_entry))
@@ -450,7 +457,7 @@ def main():
 
     # xisu checkin noon cron job group
     scheduler.add_job(
-        func=xisu_checkin_all,
+        func=checkin_all_xisu,
         id='xisu_checkin_all_noon',
         trigger="cron",
         hour=XISU_CHECKIN_ALL_CRON_NOON_HOUR,
@@ -460,7 +467,7 @@ def main():
         misfire_grace_time=10,
     )
     scheduler.add_job(
-        func=xisu_checkin_all_retry,
+        func=checkin_all_xisu_retry,
         id='xisu_checkin_all_noon_retry',
         trigger="cron",
         hour=XISU_CHECKIN_ALL_CRON_NOON_RETRY_HOUR,
@@ -472,7 +479,7 @@ def main():
 
     # xisu checkin night cron job group
     scheduler.add_job(
-        func=xisu_checkin_all,
+        func=checkin_all_xisu,
         id='xisu_checkin_all_night',
         trigger="cron",
         hour=XISU_CHECKIN_ALL_CRON_NIGHT_HOUR,
@@ -482,7 +489,7 @@ def main():
         misfire_grace_time=10,
     )
     scheduler.add_job(
-        func=xisu_checkin_all_retry,
+        func=checkin_all_xisu_retry,
         id='xisu_checkin_all_night_retry',
         trigger="cron",
         hour=XISU_CHECKIN_ALL_CRON_NIGHT_RETRY_HOUR,
