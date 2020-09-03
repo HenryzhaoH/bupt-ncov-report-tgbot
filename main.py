@@ -67,7 +67,7 @@ def list_entry(update, context, admin_all=False):
             ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n'
         ret_msg += "\n"
     ret_msgs.append(ret_msg)
-        
+
     if len(users) == 0:
         ret_msgs = ['用户列表为空']
     if len(users) >= 2 and not admin_all:
@@ -77,7 +77,7 @@ def list_entry(update, context, admin_all=False):
     first_message.delete()
     for msg in ret_msgs:
         update.message.reply_markdown(msg)
-    
+
 
 def add_by_cookie_entry(update, context):
     if len(context.args) != 2:
@@ -97,7 +97,7 @@ def add_by_cookie_entry(update, context):
         cookie_uukey = uukey,
         status = BUPTUserStatus.normal
     )
-    
+
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
     list_entry(update, context)
 
@@ -119,7 +119,7 @@ def add_by_uid_entry(update, context):
         password = password,
         status = BUPTUserStatus.normal
     )
-    
+
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
     list_entry(update, context)
 
@@ -144,6 +144,29 @@ def checkin_entry(update, context):
             ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到失败，服务器错误！\n`{e}`"
         except Exception as e:
             ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n签到异常！\n服务器返回：`{e}`"
+        update.message.reply_markdown(ret_msg)
+
+def xisu_checkin_entry(update, context):
+    tguser = TGUser.get(
+        userid = update.message.from_user.id
+    )
+    if len(context.args) > 0:
+        targets = tguser.get_buptusers_by_seqids(list(map(int, context.args)))
+    else:
+        targets = tguser.get_buptusers()
+
+    if len(targets) == 0:
+        ret_msg = '用户列表为空'
+        update.message.reply_markdown(ret_msg)
+        return
+    for buptuser in targets:
+        try:
+            ret = buptuser.xisu_ncov_checkin(force=True)[:100]
+            ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n晨午晚检成功！\n服务器返回：`{ret}`"
+        except requests.exceptions.Timeout as e:
+            ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n晨午晚检失败，服务器错误！\n`{e}`"
+        except Exception as e:
+            ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n晨午晚检异常！\n服务器返回：`{e}`"
         update.message.reply_markdown(ret_msg)
 
 def pause_entry(update, context):
@@ -192,7 +215,7 @@ def remove_entry(update, context):
         buptuser.save()
         ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已删除。"
         update.message.reply_markdown(ret_msg)
-    
+
     list_entry(update, context)
 
 def error_callback(update, context):
@@ -211,7 +234,7 @@ def tg_debug_logging(update,context):
     # Skip master message
     if update.message.from_user.id == TG_BOT_MASTER:
         return
-    
+
     updater.bot.send_message(chat_id=TG_BOT_MASTER, text="[LOG] "+ log_str, parse_mode = telegram.ParseMode.MARKDOWN)
     # Forward non-text message, like stickers.
     if update.message.text is None:
@@ -224,6 +247,14 @@ def checkinall_entry(update, context):
             checkin_all_retry()
     else:
         checkin_all()
+
+def xisu_checkinall_entry(update, context):
+    assert update.message.from_user.id == TG_BOT_MASTER
+    if len(context.args) > 0:
+        if context.args[0] == 'retry':
+            xisu_checkin_all_retry()
+    else:
+        xisu_checkin_all()
 
 def listall_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
@@ -301,41 +332,61 @@ def checkin_all():
         updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
     logger.info("checkin_all finished!")
 
+def xisu_checkin_all_retry():
+    global logger, updater
+    logger.info("xisu_checkin_all_retry started!")
+    for user in BUPTUser.select().where(
+            (BUPTUser.status == BUPTUserStatus.normal)
+            & (BUPTUser.latest_xisu_checkin_response_time < datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()))
+    ).prefetch(TGUser):
+        ret_msg = ''
+        try:
+            ret = user.xisu_ncov_checkin()[:100]
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
+        except requests.exceptions.Timeout as e:
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检失败，服务器错误，请尝试手动签到！\n{config.XISU_REPORT_PAGE}\n`{e}`\n{datetime.datetime.now()}"
+            traceback.print_exc()
+        except Exception as e:
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
+            traceback.print_exc()
+        logger.info(ret_msg)
+        updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+    logger.info("xisu_checkin_all_retry finished!")
+
+def xisu_checkin_all():
+    global logger, updater
+    try:
+        backup_db()
+    except:
+        pass
+    logger.info("xisu_checkin_all started!")
+    for user in BUPTUser.select().where(BUPTUser.status == BUPTUserStatus.normal).prefetch(TGUser):
+        ret_msg = ''
+        try:
+            ret = user.xisu_ncov_checkin()[:100]
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
+        except requests.exceptions.Timeout as e:
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检失败，服务器错误，将重试！\n`{e}`\n{datetime.datetime.now()}"
+            traceback.print_exc()
+        except Exception as e:
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
+            traceback.print_exc()
+        logger.info(ret_msg)
+        updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+    logger.info("xisu_checkin_all finished!")
+
 def main():
     global updater, scheduler
     parser = argparse.ArgumentParser(description='BUPT 2019-nCoV Report Bot')
     parser.add_argument('--initdb', default=False, action='store_true')
     args = parser.parse_args()
-    
-    database = SqliteDatabase('my_app.db')
+
+    database = SqliteDatabase(config.SQLITE_DB_FILE_PATH)
     database_proxy.initialize(database)
 
     if args.initdb:
         db_init()
         exit(0)
-
-    scheduler.add_job(
-        func=checkin_all, 
-        id='checkin_all', 
-        trigger="cron", 
-        hour=CRON_HOUR, 
-        minute=CRON_MINUTE, 
-        max_instances=1, 
-        replace_existing=False,
-        misfire_grace_time=10,
-    )
-    scheduler.add_job(
-        func=checkin_all_retry, 
-        id='checkin_all_retry', 
-        trigger="cron", 
-        hour=CRON_RETRY_HOUR, 
-        minute=CRON_RETRY_MINUTE, 
-        max_instances=1, 
-        replace_existing=False,
-        misfire_grace_time=10,
-    )
-    scheduler.start()
-    logger.info(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
 
     updater = Updater(TG_BOT_TOKEN, request_kwargs=TG_BOT_PROXY, use_context=True)
     # Get the dispatcher to register handlers
@@ -350,11 +401,13 @@ def main():
     dp.add_handler(CommandHandler("add_by_uid", add_by_uid_entry))
     dp.add_handler(CommandHandler("add_by_cookie", add_by_cookie_entry))
     dp.add_handler(CommandHandler("checkin", checkin_entry))
+    dp.add_handler(CommandHandler("xisu_checkin", xisu_checkin_entry))
     dp.add_handler(CommandHandler("pause", pause_entry))
     dp.add_handler(CommandHandler("resume", resume_entry))
     dp.add_handler(CommandHandler("remove", remove_entry))
     dp.add_handler(MessageHandler(Filters.regex(r'^/(remove|resume|pause|checkin)_.*$'), text_command_entry))
     dp.add_handler(CommandHandler("checkinall", checkinall_entry))
+    dp.add_handler(CommandHandler("xisu_checkinall", xisu_checkinall_entry))
     dp.add_handler(CommandHandler("listall", listall_entry))
     dp.add_handler(CommandHandler("status", status_entry))
     dp.add_handler(CommandHandler("sendmsg", send_message_entry))
@@ -373,6 +426,75 @@ def main():
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
+
+    scheduler.add_job(
+        func=checkin_all,
+        id='checkin_all',
+        trigger="cron",
+        hour=CHECKIN_ALL_CRON_HOUR,
+        minute=CHECKIN_ALL_CRON_MINUTE,
+        max_instances=1,
+        replace_existing=False,
+        misfire_grace_time=10,
+    )
+    scheduler.add_job(
+        func=checkin_all_retry,
+        id='checkin_all_retry',
+        trigger="cron",
+        hour=CHECKIN_ALL_CRON_RETRY_HOUR,
+        minute=CHECKIN_ALL_CRON_RETRY_MINUTE,
+        max_instances=1,
+        replace_existing=False,
+        misfire_grace_time=10,
+    )
+
+    # xisu checkin noon cron job group
+    scheduler.add_job(
+        func=xisu_checkin_all,
+        id='xisu_checkin_all_noon',
+        trigger="cron",
+        hour=XISU_CHECKIN_ALL_CRON_NOON_HOUR,
+        minute=XISU_CHECKIN_ALL_CRON_NOON_MINUTE,
+        max_instances=1,
+        replace_existing=False,
+        misfire_grace_time=10,
+    )
+    scheduler.add_job(
+        func=xisu_checkin_all_retry,
+        id='xisu_checkin_all_noon_retry',
+        trigger="cron",
+        hour=XISU_CHECKIN_ALL_CRON_NOON_RETRY_HOUR,
+        minute=XISU_CHECKIN_ALL_CRON_NOON_RETRY_MINUTE,
+        max_instances=1,
+        replace_existing=False,
+        misfire_grace_time=10,
+    )
+
+    # xisu checkin night cron job group
+    scheduler.add_job(
+        func=xisu_checkin_all,
+        id='xisu_checkin_all_night',
+        trigger="cron",
+        hour=XISU_CHECKIN_ALL_CRON_NIGHT_HOUR,
+        minute=XISU_CHECKIN_ALL_CRON_NIGHT_MINUTE,
+        max_instances=1,
+        replace_existing=False,
+        misfire_grace_time=10,
+    )
+    scheduler.add_job(
+        func=xisu_checkin_all_retry,
+        id='xisu_checkin_all_night_retry',
+        trigger="cron",
+        hour=XISU_CHECKIN_ALL_CRON_NIGHT_RETRY_HOUR,
+        minute=XISU_CHECKIN_ALL_CRON_NIGHT_RETRY_MINUTE,
+        max_instances=1,
+        replace_existing=False,
+        misfire_grace_time=10,
+    )
+
+    scheduler.start()
+    logger.info(["name: %s, trigger: %s, handler: %s, next: %s" % (job.name, job.trigger, job.func, job.next_run_time) for job in scheduler.get_jobs()])
+
     updater.idle()
 
 
@@ -385,11 +507,11 @@ if __name__ == "__main__":
             ),
             logging.StreamHandler(sys.stdout)
         ],
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
     )
     logger = logging.getLogger(__name__)
 
     scheduler = BackgroundScheduler(timezone=CRON_TIMEZONE)
-    
+
     main()
