@@ -96,6 +96,7 @@ def build_xisu_ncov_checkin_post_data(ncov_report_page_html, xisu_nconv_checkin_
     ncov_report_post_data = extract_post_data(ncov_report_page_html)
 
     filled_form = xisu_nconv_checkin_pending_form['d']['info']
+    assert filled_form, f"报告页面 {XISU_HISTORY_DATA} 返回信息不正确，可能尚未填写过晨午晚检签到"
     assert 'tw' in filled_form, f"报告页面 {XISU_HISTORY_DATA} 返回信息不正确"
 
     del filled_form['date']
