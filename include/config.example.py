@@ -1,3 +1,4 @@
+SQLITE_DB_FILE_PATH = 'my_app.db'
 
 LOGIN_API = 'https://app.bupt.edu.cn/uc/wap/login/check'
 REPORT_PAGE = 'https://app.bupt.edu.cn/ncov/wap/default/index'
@@ -43,7 +44,7 @@ HELP_MARKDOWN='''
   列出所有签到用户
 /checkin
   立即执行签到
-/xisu\_checkin
+/checkinxisu
   立即执行晨午晚检签到
 
 /add\_by\_uid `用户名/学号` `密码` 
@@ -62,5 +63,3 @@ HELP_MARKDOWN='''
 晨午晚检地理位置信息采取与原签到功能相同的数据。
 因此，如果您改变了城市（如返回北京），请先使用 /pause 暂停自动签到，并 **【连续两天】** 手动签到成功后，再使用 /resume 恢复自动签到。
 '''
-
-SQLITE_DB_FILE_PATH = 'my_app.db'
