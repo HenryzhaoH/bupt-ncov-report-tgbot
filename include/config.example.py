@@ -34,6 +34,7 @@ BOT_DEBUG = False
 
 HELP_MARKDOWN='''
 自动签到时间：每日0点10分
+自动晨午晚检时间：每日12点10分、18点10分
 请在使用本 bot 前，确保已经正确提交过一次上报。
 本 bot 的目标签到系统为：[app.bupt.edu.cn/ncov/...](https://app.bupt.edu.cn/ncov/wap/default/index)
 
@@ -41,6 +42,8 @@ HELP_MARKDOWN='''
   列出所有签到用户
 /checkin
   立即执行签到
+/xisu_checkin
+  立即执行晨午晚检签到
 
 /add\_by\_uid `用户名/学号` `密码` 
   用户信息为统一身份认证 UIS 系统
@@ -55,6 +58,7 @@ HELP_MARKDOWN='''
 
 工作原理与位置变更须知：
 从网页上获取上一次成功签到的数据，处理后再次提交。
+晨午晚检地理位置信息采取与原签到功能相同的数据。
 因此，如果您改变了城市（如返回北京），请先使用 /pause 暂停自动签到，并 **【连续两天】** 手动签到成功后，再使用 /resume 恢复自动签到。
 '''
 
