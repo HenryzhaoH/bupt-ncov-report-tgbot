@@ -248,6 +248,14 @@ def checkinall_entry(update, context):
     else:
         checkin_all()
 
+def xisu_checkinall_entry(update, context):
+    assert update.message.from_user.id == TG_BOT_MASTER
+    if len(context.args) > 0:
+        if context.args[0] == 'retry':
+            xisu_checkin_all_retry()
+    else:
+        xisu_checkin_all()
+
 def listall_entry(update, context):
     assert update.message.from_user.id == TG_BOT_MASTER
     list_entry(update,context,admin_all=True)
@@ -399,6 +407,7 @@ def main():
     dp.add_handler(CommandHandler("remove", remove_entry))
     dp.add_handler(MessageHandler(Filters.regex(r'^/(remove|resume|pause|checkin)_.*$'), text_command_entry))
     dp.add_handler(CommandHandler("checkinall", checkinall_entry))
+    dp.add_handler(CommandHandler("xisu_checkinall", xisu_checkinall_entry))
     dp.add_handler(CommandHandler("listall", listall_entry))
     dp.add_handler(CommandHandler("status", status_entry))
     dp.add_handler(CommandHandler("sendmsg", send_message_entry))
