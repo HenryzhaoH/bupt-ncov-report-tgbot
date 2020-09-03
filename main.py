@@ -307,7 +307,7 @@ def main():
     parser.add_argument('--initdb', default=False, action='store_true')
     args = parser.parse_args()
 
-    database = SqliteDatabase('my_app.db')
+    database = SqliteDatabase(config.SQLITE_DB_FILE_PATH)
     database_proxy.initialize(database)
 
     if args.initdb:

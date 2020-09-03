@@ -61,7 +61,7 @@ def extract_post_data(html: str, old_data=None) -> Dict[str, str]:
         'szgj': '',
         'szcs': '',
         # Moved info sanitize
-        'sfsfbh': 0, 
+        'sfsfbh': 0,
         'xjzd': '',
         'bztcyy': '',
         'zgfxdq': 0,
@@ -72,12 +72,12 @@ def extract_post_data(html: str, old_data=None) -> Dict[str, str]:
         'sfyqjzgc': '',
     }
     old_data.update(SANITIZE_PROPS)
-    
+
     try:
         if len(old_data['address']) == 0 \
         or (
             len(old_data['city']) == 0 \
-            and old_data['province'] in ['北京市','上海市','重庆市','天津市'] 
+            and old_data['province'] in ['北京市','上海市','重庆市','天津市']
         ):
             geo_info = json.loads(old_data['geo_api_info'])
             old_data['address'] = geo_info['formattedAddress']
@@ -91,3 +91,24 @@ def extract_post_data(html: str, old_data=None) -> Dict[str, str]:
         raise RuntimeError(f'定位信息为空，自动修复地址信息失败。手动上报一次后方可正常使用。')
 
     return old_data
+
+def build_xisu_ncov_checkin_post_data(ncov_report_page_html, xisu_nconv_checkin_pending_form):
+    ncov_report_post_data = extract_post_data(ncov_report_page_html)
+
+    filled_form = xisu_nconv_checkin_pending_form['d']['info']
+    assert 'tw' in filled_form, f"报告页面 {XISU_HISTORY_DATA} 返回信息不正确"
+
+    del filled_form['date']
+    del filled_form['flag']
+    del filled_form['uid']
+    del filled_form['creator']
+    del filled_form['created']
+    del filled_form['id']
+
+    filled_form['area'] = ncov_report_post_data['area']
+    filled_form['city'] = ncov_report_post_data['city']
+    filled_form['province'] = ncov_report_post_data['province']
+    filled_form['address'] = ncov_report_post_data['address']
+    filled_form['geo_api_info'] = ncov_report_post_data['geo_api_info']
+
+    return filled_form

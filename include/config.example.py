@@ -4,6 +4,10 @@ REPORT_PAGE = 'https://app.bupt.edu.cn/ncov/wap/default/index'
 REPORT_API = 'https://app.bupt.edu.cn/ncov/wap/default/save'
 API_TIMEOUT = 20 # in seconds
 
+XISU_REPORT_PAGE = 'https://app.bupt.edu.cn/site/ncov/xisudailyup'
+XISU_HISTORY_DATA = 'https://app.bupt.edu.cn/xisuncov/wap/open-report/index'
+XISU_REPORT_API = 'https://app.bupt.edu.cn/xisuncov/wap/open-report/save'
+
 CRON_TIMEZONE = 'Asia/Shanghai'
 CHECKIN_ALL_CRON_HOUR = 0
 CHECKIN_ALL_CRON_MINUTE = 10
@@ -43,3 +47,5 @@ HELP_MARKDOWN='''
 从网页上获取上一次成功签到的数据，处理后再次提交。
 因此，如果您改变了城市（如返回北京），请先使用 /pause 暂停自动签到，并 **【连续两天】** 手动签到成功后，再使用 /resume 恢复自动签到。
 '''
+
+SQLITE_DB_FILE_PATH = 'my_app.db'
