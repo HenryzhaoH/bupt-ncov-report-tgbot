@@ -43,7 +43,7 @@ HELP_MARKDOWN='''
   列出所有签到用户
 /checkin
   立即执行签到
-/xisu_checkin
+/xisu\_checkin
   立即执行晨午晚检签到
 
 /add\_by\_uid `用户名/学号` `密码` 
