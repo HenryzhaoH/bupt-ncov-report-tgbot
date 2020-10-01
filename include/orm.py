@@ -67,6 +67,7 @@ class BUPTUser(BaseModel):
         assert self.username != None
         _logger.info(f"[login] Trying user: {self.username}")
         session = requests.Session()
+        session.proxies.update(CHECKIN_PROXY)
 
         login_resp = session.post(LOGIN_API, data={
             'username': self.username,
@@ -91,6 +92,7 @@ class BUPTUser(BaseModel):
         if not force:
             self.check_status()
         session = requests.Session()
+        session.proxies.update(CHECKIN_PROXY)
         if self.cookie_eaisess != None:
             cookies={
                 'eai-sess': self.cookie_eaisess,
@@ -141,6 +143,7 @@ class BUPTUser(BaseModel):
         if not force:
             self.check_status()
         session = requests.Session()
+        session.proxies.update(CHECKIN_PROXY)
         if self.cookie_eaisess != None:
             cookies={
                 'eai-sess': self.cookie_eaisess,
