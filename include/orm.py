@@ -53,10 +53,15 @@ class BUPTUser(BaseModel):
     latest_xisu_checkin_data = TextField(null=True)
     latest_xisu_checkin_response_data = TextField(null=True)
     latest_xisu_checkin_response_time = DateTimeField(null=True, index=True)
+    xisu_checkin_status = IntegerField(index=True, default=BUPTUserStatus.normal)
 
     def save(self, *args, **kwargs):
         self.update_time = datetime.datetime.now()
         return super(BUPTUser, self).save(*args, **kwargs)
+
+    def check_xisu_checkin_status(self):
+        assert self.xisu_checkin_status != BUPTUserStatus.stopped
+        assert self.status != BUPTUserStatus.removed
 
     def check_status(self):
         assert self.status != BUPTUserStatus.stopped
@@ -141,7 +146,7 @@ class BUPTUser(BaseModel):
     # name adapted from api /xisuncov/wap/open-report/index
     def xisu_ncov_checkin(self, force=False):
         if not force:
-            self.check_status()
+            self.check_xisu_checkin_status()
         session = requests.Session()
         session.proxies.update(CHECKIN_PROXY)
         if self.cookie_eaisess != None:
@@ -158,7 +163,7 @@ class BUPTUser(BaseModel):
                 session = self.login()
             else:
                 # TODO: warning status update
-                self.status = BUPTUserStatus.warning
+                self.xisu_checkin_status = BUPTUserStatus.warning
                 self.save()
                 raise RuntimeWarning(f'Cookies expired with no login info set. Please update your cookie. \neai-sess:`{self.cookie_eaisess}`')
             history_data = session.get(XISU_HISTORY_DATA, allow_redirects=False, timeout=API_TIMEOUT)
