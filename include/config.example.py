@@ -31,7 +31,7 @@ TG_BOT_PROXY = None # example: {'proxy_url': 'socks5h://127.0.0.1:1080/'}
 TG_BOT_TOKEN = ""   # Bot Token
 TG_BOT_MASTER = 0   # Master Telegram User ID
 
-CHECKIN_PROXY = None # example: {'http': 'socks5://user:pass@host:port', 'https': 'socks5://user:pass@host:port'}
+CHECKIN_PROXY = {} # example: {'http': 'socks5://user:pass@host:port', 'https': 'socks5://user:pass@host:port'}
 
 BOT_DEBUG = False
 
