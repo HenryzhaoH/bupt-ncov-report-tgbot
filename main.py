@@ -58,6 +58,10 @@ def list_entry(update, context, admin_all=False):
             ret_msg += f'自动签到: `启用`\n'
         else:
             ret_msg += f'自动签到: `暂停`\n'
+        if user.xisu_checkin_status == BUPTUserStatus.normal:
+            ret_msg += f'自动晨午晚检: `启用`\n'
+        else:
+            ret_msg += f'自动晨午晚检: `暂停`\n'
         if user.latest_response_data == None:
             ret_msg += '从未尝试签到\n'
         else:
@@ -72,13 +76,14 @@ def list_entry(update, context, admin_all=False):
 
         if not admin_all:
             ret_msg += f'暂停 /pause\_{id}   恢复 /resume\_{id}\n签到 /checkin\_{id} 删除 /remove\_{id}\n晨午晚检签到 /checkinxisu\_{id}\n'
+            ret_msg += f'暂停自动晨午晚检 /pausexisu\_{id} 恢复自动晨午晚检 /resumexisu\_{id}\n'
         ret_msg += "\n"
     ret_msgs.append(ret_msg)
 
     if len(users) == 0:
         ret_msgs = ['用户列表为空']
     if len(users) >= 2 and not admin_all:
-        ret_msgs[-1] += f'恢复全部 /resume  暂停全部 /pause\n签到全部 /checkin  删除全部 /remove\_all \n晨午晚检签到 /checkinxisu'
+        ret_msgs[-1] += f'恢复全部 /resume  暂停全部 /pause\n签到全部 /checkin  删除全部 /remove\_all \n晨午晚检签到 /checkinxisu\n暂停自动晨午晚检 /pausexisu 恢复自动晨午晚检 /resumexisu\n'
     logger.debug(ret_msgs)
 
     first_message.delete()
@@ -102,7 +107,8 @@ def add_by_cookie_entry(update, context):
         owner = tguser,
         cookie_eaisess = eaisess,
         cookie_uukey = uukey,
-        status = BUPTUserStatus.normal
+        status = BUPTUserStatus.normal,
+        xisu_checkin_status = BUPTUserStatus.normal,
     )
 
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
@@ -124,7 +130,8 @@ def add_by_uid_entry(update, context):
         owner = tguser,
         username = username,
         password = password,
-        status = BUPTUserStatus.normal
+        status = BUPTUserStatus.normal,
+        xisu_checkin_status = BUPTUserStatus.normal,
     )
 
     first_message.edit_text('添加成功！', parse_mode = telegram.ParseMode.MARKDOWN)
@@ -174,6 +181,36 @@ def checkinxisu_entry(update, context):
             ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n晨午晚检失败，服务器错误！\n`{e}`"
         except Exception as e:
             ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n晨午晚检异常！\n服务器返回：`{e}`"
+        update.message.reply_markdown(ret_msg)
+
+def pausexisu_entry(update, context):
+    tguser = TGUser.get(
+        userid = update.message.from_user.id
+    )
+    if len(context.args) > 0:
+        targets = tguser.get_buptusers_by_seqids(list(map(int, context.args)))
+    else:
+        targets = tguser.get_buptusers()
+
+    for buptuser in targets:
+        buptuser.xisu_checkin_status = BUPTUserStatus.stopped
+        buptuser.save()
+        ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已暂停自动晨午晚检。"
+        update.message.reply_markdown(ret_msg)
+
+def resumexisu_entry(update, context):
+    tguser = TGUser.get(
+        userid = update.message.from_user.id
+    )
+    if len(context.args) > 0:
+        targets = tguser.get_buptusers_by_seqids(list(map(int, context.args)))
+    else:
+        targets = tguser.get_buptusers()
+
+    for buptuser in targets:
+        buptuser.xisu_checkin_status = BUPTUserStatus.normal
+        buptuser.save()
+        ret_msg = f"用户：`{buptuser.username or buptuser.cookie_eaisess or '[None]'}`\n已启用自动晨午晚检。"
         update.message.reply_markdown(ret_msg)
 
 def pause_entry(update, context):
@@ -343,7 +380,7 @@ def checkin_all_xisu_retry():
     global logger, updater
     logger.info("xisu_checkin_all_retry started!")
     for user in BUPTUser.select().where(
-            (BUPTUser.status == BUPTUserStatus.normal)
+            (BUPTUser.xisu_checkin_status == BUPTUserStatus.normal)
             & (BUPTUser.latest_xisu_checkin_response_time < datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()))
     ).prefetch(TGUser):
         ret_msg = ''
@@ -367,7 +404,7 @@ def checkin_all_xisu():
     except:
         pass
     logger.info("xisu_checkin_all started!")
-    for user in BUPTUser.select().where(BUPTUser.status == BUPTUserStatus.normal).prefetch(TGUser):
+    for user in BUPTUser.select().where(BUPTUser.xisu_checkin_status == BUPTUserStatus.normal).prefetch(TGUser):
         ret_msg = ''
         try:
             ret = user.xisu_ncov_checkin()[:100]
@@ -411,8 +448,10 @@ def main():
     dp.add_handler(CommandHandler("checkinxisu", checkinxisu_entry))
     dp.add_handler(CommandHandler("pause", pause_entry))
     dp.add_handler(CommandHandler("resume", resume_entry))
+    dp.add_handler(CommandHandler("pausexisu", pausexisu_entry))
+    dp.add_handler(CommandHandler("resumexisu", resumexisu_entry))
     dp.add_handler(CommandHandler("remove", remove_entry))
-    dp.add_handler(MessageHandler(Filters.regex(r'^/(remove|resume|pause|checkin|checkinxisu)_.*$'), text_command_entry))
+    dp.add_handler(MessageHandler(Filters.regex(r'^/(remove|resume|pause|checkin|checkinxisu|pausexisu|resumexisu)_.*$'), text_command_entry))
     dp.add_handler(CommandHandler("checkinall", checkinall_entry))
     dp.add_handler(CommandHandler("checkinallxisu", checkinallxisu_entry))
     dp.add_handler(CommandHandler("listall", listall_entry))
