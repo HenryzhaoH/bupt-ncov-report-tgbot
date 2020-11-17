@@ -380,7 +380,8 @@ def checkin_all_xisu_retry():
     global logger, updater
     logger.info("xisu_checkin_all_retry started!")
     for user in BUPTUser.select().where(
-            (BUPTUser.xisu_checkin_status == BUPTUserStatus.normal)
+            (BUPTUser.status != BUPTUserStatus.removed)
+            & (BUPTUser.xisu_checkin_status == BUPTUserStatus.normal)
             & (BUPTUser.latest_xisu_checkin_response_time < datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()))
     ).prefetch(TGUser):
         ret_msg = ''
@@ -404,7 +405,10 @@ def checkin_all_xisu():
     except:
         pass
     logger.info("xisu_checkin_all started!")
-    for user in BUPTUser.select().where(BUPTUser.xisu_checkin_status == BUPTUserStatus.normal).prefetch(TGUser):
+    for user in BUPTUser.select().where(
+            (BUPTUser.status != BUPTUserStatus.removed)
+            & (BUPTUser.xisu_checkin_status == BUPTUserStatus.normal)
+    ).prefetch(TGUser):
         ret_msg = ''
         try:
             ret = user.xisu_ncov_checkin()[:100]
