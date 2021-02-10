@@ -2,7 +2,7 @@ APScheduler==3.6.3
 certifi==2019.11.28
 cffi==1.14.0
 chardet==3.0.4
-cryptography==3.2
+cryptography==3.3.2
 decorator==4.4.1
 future==0.18.2
 idna==2.9
