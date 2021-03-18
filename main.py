@@ -322,7 +322,10 @@ def broadcast_entry(update, context):
     ).prefetch(TGUser):
         active_userids.add(user.owner.userid)
     for userid in active_userids:
-        updater.bot.send_message(chat_id=userid, text=' '.join(update.message.text.split(' ')[1:]))
+        try:
+            updater.bot.send_message(chat_id=userid, text=' '.join(update.message.text.split(' ')[1:]))
+        except Exception as e:
+            logger.warning(str(e))
 
 def text_command_entry(update, context):
     req_args = update.message.text.strip(f'@{updater.bot.username}').split('_')
@@ -352,7 +355,10 @@ def checkin_all_retry():
             ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
             traceback.print_exc()
         logger.info(ret_msg)
-        updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        try:
+            updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            logger.warning(str(e))
     logger.info("checkin_all_retry finished!")
 
 def checkin_all():
@@ -373,7 +379,10 @@ def checkin_all():
             ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
             traceback.print_exc()
         logger.info(ret_msg)
-        updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        try:
+            updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            logger.warning(str(e))
     logger.info("checkin_all finished!")
 
 def checkin_all_xisu_retry():
@@ -395,7 +404,10 @@ def checkin_all_xisu_retry():
             ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
             traceback.print_exc()
         logger.info(ret_msg)
-        updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        try:
+            updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            logger.warning(str(e))
     logger.info("xisu_checkin_all_retry finished!")
 
 def checkin_all_xisu():
@@ -420,7 +432,10 @@ def checkin_all_xisu():
             ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
             traceback.print_exc()
         logger.info(ret_msg)
-        updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        try:
+            updater.bot.send_message(chat_id=user.owner.userid, text=ret_msg, parse_mode = telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            logger.warning(str(e))
     logger.info("xisu_checkin_all finished!")
 
 def main():
