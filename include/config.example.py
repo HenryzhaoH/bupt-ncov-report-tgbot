@@ -35,6 +35,8 @@ CHECKIN_PROXY = {} # example: {'http': 'socks5://user:pass@host:port', 'https': 
 
 BOT_DEBUG = False
 
+DISPLAY_TIMEZONE = 'Asia/Shanghai'
+
 HELP_MARKDOWN='''
 自动签到时间：每日0点10分
 自动晨午晚检时间：每日12点10分、18点10分
