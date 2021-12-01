@@ -2,6 +2,8 @@ import re
 from typing import Dict, Optional
 import logging
 import requests
+import datetime
+from pytz import timezone as pytz_timezone
 import logging
 import json
 from .config import *
@@ -113,3 +115,7 @@ def build_xisu_ncov_checkin_post_data(ncov_report_page_html, xisu_nconv_checkin_
     filled_form['geo_api_info'] = ncov_report_post_data['geo_api_info']
 
     return filled_form
+
+def display_time_formatted():
+    # Return human-readable date with current display timezone, regardless of the host's timezone settings
+    return datetime.datetime.now(tz=pytz_timezone(DISPLAY_TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S.%f')

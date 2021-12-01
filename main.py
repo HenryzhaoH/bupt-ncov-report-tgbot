@@ -347,12 +347,12 @@ def checkin_all_retry():
         ret_msg = ''
         try:
             ret = user.ncov_checkin()[:100]
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到成功！\n服务器返回：`{ret}`\n{display_time_formatted()}"
         except requests.exceptions.Timeout as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到失败，服务器错误，请尝试手动签到！\nhttps://app.bupt.edu.cn/ncov/wap/default/index\n`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到失败，服务器错误，请尝试手动签到！\nhttps://app.bupt.edu.cn/ncov/wap/default/index\n`{e}`\n{display_time_formatted()}"
             traceback.print_exc()
         except Exception as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试签到异常！\n服务器返回：`{e}`\n{display_time_formatted()}"
             traceback.print_exc()
         logger.info(ret_msg)
         try:
@@ -371,12 +371,12 @@ def checkin_all():
         ret_msg = ''
         try:
             ret = user.ncov_checkin()[:100]
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到成功！\n服务器返回：`{ret}`\n{display_time_formatted()}"
         except requests.exceptions.Timeout as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到失败，服务器错误，将重试！\n`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到失败，服务器错误，将重试！\n`{e}`\n{display_time_formatted()}"
             traceback.print_exc()
         except Exception as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动签到异常！\n服务器返回：`{e}`\n{display_time_formatted()}"
             traceback.print_exc()
         logger.info(ret_msg)
         try:
@@ -396,12 +396,12 @@ def checkin_all_xisu_retry():
         ret_msg = ''
         try:
             ret = user.xisu_ncov_checkin()[:100]
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检成功！\n服务器返回：`{ret}`\n{display_time_formatted()}"
         except requests.exceptions.Timeout as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检失败，服务器错误，请尝试手动签到！\n{config.XISU_REPORT_PAGE}\n`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检失败，服务器错误，请尝试手动签到！\n{config.XISU_REPORT_PAGE}\n`{e}`\n{display_time_formatted()}"
             traceback.print_exc()
         except Exception as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n重试晨午晚检异常！\n服务器返回：`{e}`\n{display_time_formatted()}"
             traceback.print_exc()
         logger.info(ret_msg)
         try:
@@ -424,12 +424,12 @@ def checkin_all_xisu():
         ret_msg = ''
         try:
             ret = user.xisu_ncov_checkin()[:100]
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检成功！\n服务器返回：`{ret}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检成功！\n服务器返回：`{ret}`\n{display_time_formatted()}"
         except requests.exceptions.Timeout as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检失败，服务器错误，将重试！\n`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检失败，服务器错误，将重试！\n`{e}`\n{display_time_formatted()}"
             traceback.print_exc()
         except Exception as e:
-            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检异常！\n服务器返回：`{e}`\n{datetime.datetime.now()}"
+            ret_msg = f"用户：`{user.username or user.cookie_eaisess or '[None]'}`\n自动晨午晚检异常！\n服务器返回：`{e}`\n{display_time_formatted()}"
             traceback.print_exc()
         logger.info(ret_msg)
         try:
