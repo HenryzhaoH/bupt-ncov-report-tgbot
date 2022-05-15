@@ -73,6 +73,7 @@ class BUPTUser(BaseModel):
         _logger.info(f"[login] Trying user: {self.username}")
         session = requests.Session()
         session.proxies.update(CHECKIN_PROXY)
+        session.headers.update({'User-Agent': REQUESTS_USERAGENT})
 
         login_resp = session.post(LOGIN_API, data={
             'username': self.username,
@@ -98,6 +99,7 @@ class BUPTUser(BaseModel):
             self.check_status()
         session = requests.Session()
         session.proxies.update(CHECKIN_PROXY)
+        session.headers.update({'User-Agent': REQUESTS_USERAGENT})
         if self.cookie_eaisess != None:
             cookies={
                 'eai-sess': self.cookie_eaisess,
@@ -149,6 +151,7 @@ class BUPTUser(BaseModel):
             self.check_xisu_checkin_status()
         session = requests.Session()
         session.proxies.update(CHECKIN_PROXY)
+        session.headers.update({'User-Agent': REQUESTS_USERAGENT})
         if self.cookie_eaisess != None:
             cookies={
                 'eai-sess': self.cookie_eaisess,

@@ -9,6 +9,8 @@ XISU_REPORT_PAGE = 'https://app.bupt.edu.cn/site/ncov/xisudailyup'
 XISU_HISTORY_DATA = 'https://app.bupt.edu.cn/xisuncov/wap/open-report/index'
 XISU_REPORT_API = 'https://app.bupt.edu.cn/xisuncov/wap/open-report/save'
 
+REQUESTS_USERAGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36 Edg/101.0.1210.39'
+
 CRON_TIMEZONE = 'Asia/Shanghai'
 CHECKIN_ALL_CRON_HOUR = 0
 CHECKIN_ALL_CRON_MINUTE = 10
